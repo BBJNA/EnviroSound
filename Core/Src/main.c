@@ -41,6 +41,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 DAC_HandleTypeDef hdac;
+DMA_HandleTypeDef hdma_dac_ch1;
 
 TIM_HandleTypeDef htim6;
 
@@ -48,9 +49,9 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 
-uint32_t sintable[] = {0x800,0x881,0x901,0x980,0x9fd,0xa79,0xaf2,0xb68,0xbdb,0xc49,
+uint16_t sintable[] = {0x800,0x881,0x901,0x980,0x9fd,0xa79,0xaf2,0xb68,0xbdb,0xc49,
 		0xcb4,0xd19,0xd7a,0xdd5,0xe2a,0xe79,0xec1,0xf03,0xf3d,0xf70,
-		0xf9c,0xfc0,0xfdc,0xff0,0xffc,0x1000,0xffc,0xff0,0xfdc,0xfc0,
+		0xf9c,0xfc0,0xfdc,0xff0,0xffc,0xfff,0xffc,0xff0,0xfdc,0xfc0,
 		0xf9c,0xf70,0xf3d,0xf03,0xec1,0xe79,0xe2a,0xdd5,0xd7a,0xd19,
 		0xcb4,0xc49,0xbdb,0xb68,0xaf2,0xa79,0x9fd,0x980,0x901,0x881,
 		0x800,0x77f,0x6ff,0x680,0x603,0x587,0x50e,0x498,0x425,0x3b7,
@@ -58,13 +59,16 @@ uint32_t sintable[] = {0x800,0x881,0x901,0x980,0x9fd,0xa79,0xaf2,0xb68,0xbdb,0xc
 		0x64,0x40,0x24,0x10,0x4,0x0,0x4,0x10,0x24,0x40,
 		0x64,0x90,0xc3,0xfd,0x13f,0x187,0x1d6,0x22b,0x286,0x2e7,
 		0x34c,0x3b7,0x425,0x498,0x50e,0x587,0x603,0x680,0x6ff,0x77f};
+
 uint8_t sinpos = 0;
 
+uint8_t tablesize = sizeof(sintable)/sizeof(sintable[0]);
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_DAC_Init(void);
 static void MX_TIM6_Init(void);
@@ -105,10 +109,14 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_USART2_UART_Init();
   MX_DAC_Init();
   MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
+
+  HAL_TIM_Base_Start(&htim6);
+  HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*) sintable, (uint32_t) tablesize, DAC_ALIGN_12B_R);
 
   /* USER CODE END 2 */
 
@@ -116,22 +124,9 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	    /* USER CODE END WHILE */
-		  //while(hdac.State != HAL_DAC_STATE_READY);
-		  HAL_DAC_Stop(&hdac, DAC_CHANNEL_1);
+    /* USER CODE END WHILE */
 
-		  HAL_DAC_SetValue(&hdac,DAC_CHANNEL_1,DAC_ALIGN_12B_R,sintable[sinpos]);
-
-		  HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
-
-		  for(int i = 0; i <10000; i++);
-
-		  if (sinpos < 100){
-			  sinpos++;
-		  }else{
-			  sinpos = 0;
-		  }
-	    /* USER CODE BEGIN 3 */
+    /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
 }
@@ -232,15 +227,15 @@ static void MX_TIM6_Init(void)
 
   /* USER CODE END TIM6_Init 1 */
   htim6.Instance = TIM6;
-  htim6.Init.Prescaler = 48000 - 1;
+  htim6.Init.Prescaler = 1;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim6.Init.Period = 10000-1;
+  htim6.Init.Period = 452;
   htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
   {
     Error_Handler();
   }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim6, &sMasterConfig) != HAL_OK)
   {
@@ -284,6 +279,22 @@ static void MX_USART2_UART_Init(void)
   /* USER CODE BEGIN USART2_Init 2 */
 
   /* USER CODE END USART2_Init 2 */
+
+}
+
+/**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Channel2_3_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel2_3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
 
 }
 
