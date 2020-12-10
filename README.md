@@ -7,8 +7,7 @@ Make a device that will adjust the sound of the device based on it's environment
 * ~~Get DAC DMA to create sine wave~~ DONE (12/08/2020)
 * Create different wave tables and swap between them <--- Here as of 12/08/2020
   * Sawtooth
-  * Triangle
-  * Square
+  * "Drip"
 * Get ADC interface working
 * If not on-chip ADC get Serial interface working <-- Determine if required from research above.
 * Have a way to generate various frequencies
