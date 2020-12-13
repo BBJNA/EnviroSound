@@ -8,7 +8,7 @@ Make a device that will adjust the sound of the device based on it's environment
 * ~~Create different wave tables and swap between them~~ DONE (12/12/2020)
   * ~~Sawtooth~~
   * ~~"Drip"~~
-* Get ADC interface working <--- Here as of 12/09/2020
+* Get ADC interface working <--- Here as of 12/12/2020
 * If not on-chip ADC get Serial interface working <-- Determine if required from research above.
 * Have a way to generate various frequencies
 * Get RTOS working (Potential)
