@@ -81,9 +81,16 @@ uint16_t driptable[] = {0xfff,0xec4,0xda2,0xc95,0xb9e,0xab9,0x9e6,0x923,0x86f,0x
 		0x173,0x192,0x1b4,0x1d8,0x200,0x22a,0x258,0x28a,0x2c1,0x2fb,
 		0x33b,0x380,0x3ca,0x41b,0x473,0x4d1,0x538,0x5a7,0x620,0x6a3,
 		0x730,0x7c9,0x86f,0x923,0x9e6,0xab9,0xb9e,0xc95,0xda2,0xec4};
-uint8_t sinpos = 0;
 
 uint8_t tablesize = sizeof(sintable)/sizeof(sintable[0]);
+
+/*Variable to change wave type
+ * Sin = 0
+ * Saw = 1
+ * Drip = 2
+ */
+uint8_t waveselect = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -93,6 +100,9 @@ static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_DAC_Init(void);
 static void MX_TIM6_Init(void);
+static void EXI_GPIO_Config(void);
+static void WaveChange(void);
+
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -136,8 +146,14 @@ int main(void)
   MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
 
+  //Start TIM6 for DAC event trigger
   HAL_TIM_Base_Start(&htim6);
-  HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*) sawtable, (uint32_t) tablesize, DAC_ALIGN_12B_R);
+
+  //Start DAC DMA to initial configuration
+  HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*) sintable, (uint32_t) tablesize, DAC_ALIGN_12B_R);
+
+  //Setup Push Button (C13) as an interrupt.
+  EXI_GPIO_Config();
 
   /* USER CODE END 2 */
 
@@ -339,7 +355,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : LD2_Pin */
@@ -352,6 +368,72 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void EXI_GPIO_Config(void){
+
+//Enable the GPIOC AHB CLOCK
+	__HAL_RCC_GPIOC_CLK_ENABLE();
+
+//Configure GPIO Pin(s)
+/* Commenting out this code because I already initialize
+ * the GPIO to be an input and specified interrupt
+ * config.*/
+//	GPIO_InitTypeDef BlueButton;
+//	BlueButton.Pin = B1_Pin;
+//	BlueButton.Mode = GPIO_MODE_IT_FALLING;
+//	BlueButton.Pull = GPIO_PULLUP;
+//	HAL_GPIO_Init(GPIOC, &BlueButton;
+
+//Enable and set the Interupt line for the Push Button to lowest priority
+	HAL_NVIC_SetPriority(EXTI4_15_IRQn,2,0);
+	HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
+
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
+
+	if (GPIO_Pin == GPIO_PIN_13)
+	  {
+	    /* Toggle LED2 */
+		HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_5);
+		WaveChange();
+	  }
+}
+
+
+static void WaveChange(void){
+
+	if(waveselect < 2
+			){
+
+		waveselect++;
+
+	}else{
+
+		waveselect = 0;
+	}
+
+	HAL_DAC_Stop_DMA(&hdac, DAC_CHANNEL_1);
+
+	switch(waveselect){
+
+	case 0:
+		HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*) sintable, (uint32_t) tablesize, DAC_ALIGN_12B_R);
+		break;
+
+	case 1:
+		HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*) sawtable, (uint32_t) tablesize, DAC_ALIGN_12B_R);
+		break;
+
+	case 2:
+		HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*) driptable, (uint32_t) tablesize, DAC_ALIGN_12B_R);
+		break;
+
+	default:
+		break;
+	}
+
+
+}
 
 /* USER CODE END 4 */
 
