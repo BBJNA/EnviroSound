@@ -54,8 +54,8 @@ all: main-build
 main-build: EnviroSound.elf secondary-outputs
 
 # Tool invocations
-EnviroSound.elf: $(OBJS) $(USER_OBJS) Y:\Designs\EmbeddedCode\STMIDE\workspace_1.4.0\EnviroSound\STM32F072RBTX_FLASH.ld
-	arm-none-eabi-gcc -o "EnviroSound.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0 -T"Y:\Designs\EmbeddedCode\STMIDE\workspace_1.4.0\EnviroSound\STM32F072RBTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="EnviroSound.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+EnviroSound.elf: $(OBJS) $(USER_OBJS) C:\Users\jesma\Documents\GITHUB\Envirosound\STM32F072RBTX_FLASH.ld
+	arm-none-eabi-gcc -o "EnviroSound.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0 -T"C:\Users\jesma\Documents\GITHUB\Envirosound\STM32F072RBTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="EnviroSound.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

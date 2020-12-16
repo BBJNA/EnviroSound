@@ -100,16 +100,14 @@ static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_DAC_Init(void);
 static void MX_TIM6_Init(void);
-static void EXI_GPIO_Config(void);
-static void WaveChange(void);
-
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+static void EXI_GPIO_Config(void);
+static void WaveChange(void);
 /* USER CODE END 0 */
 
 /**

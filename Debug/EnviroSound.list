@@ -39,11 +39,11 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING
  17 .debug_line   0000b0a6  00000000  00000000  0004865d  2**0
                   CONTENTS, READONLY, DEBUGGING
- 18 .debug_str    00095d7b  00000000  00000000  00053703  2**0
+ 18 .debug_str    00095d2e  00000000  00000000  00053703  2**0
                   CONTENTS, READONLY, DEBUGGING
- 19 .comment      0000007b  00000000  00000000  000e947e  2**0
+ 19 .comment      0000007b  00000000  00000000  000e9431  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  00003070  00000000  00000000  000e94fc  2**2
+ 20 .debug_frame  00003070  00000000  00000000  000e94ac  2**2
                   CONTENTS, READONLY, DEBUGGING
 
 Disassembly of section .text:
@@ -275,7 +275,7 @@ int main(void)
  8000246:	f002 f8bf 	bl	80023c8 <HAL_TIM_Base_Start>
 
   //Start DAC DMA to initial configuration
-  HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*) driptable, (uint32_t) tablesize, DAC_ALIGN_12B_R);
+  HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*) sintable, (uint32_t) tablesize, DAC_ALIGN_12B_R);
  800024a:	4b08      	ldr	r3, [pc, #32]	; (800026c <main+0x4c>)
  800024c:	781b      	ldrb	r3, [r3, #0]
  800024e:	0019      	movs	r1, r3
@@ -300,7 +300,7 @@ int main(void)
  8000266:	46c0      	nop			; (mov r8, r8)
  8000268:	200002e0 	.word	0x200002e0
  800026c:	20000258 	.word	0x20000258
- 8000270:	20000190 	.word	0x20000190
+ 8000270:	20000000 	.word	0x20000000
  8000274:	200002cc 	.word	0x200002cc
 
 08000278 <SystemClock_Config>:
@@ -924,11 +924,12 @@ static void WaveChange(void){
  80005d2:	b082      	sub	sp, #8
  80005d4:	af02      	add	r7, sp, #8
 
-	if(waveselect < 2){
+	if(waveselect < 2
  80005d6:	4b21      	ldr	r3, [pc, #132]	; (800065c <WaveChange+0x8c>)
  80005d8:	781b      	ldrb	r3, [r3, #0]
  80005da:	2b01      	cmp	r3, #1
  80005dc:	d806      	bhi.n	80005ec <WaveChange+0x1c>
+			){
 
 		waveselect++;
  80005de:	4b1f      	ldr	r3, [pc, #124]	; (800065c <WaveChange+0x8c>)
@@ -1566,49 +1567,109 @@ void SystemInit(void)
 	...
 
 080008ec <Reset_Handler>:
+
+  .section .text.Reset_Handler
+  .weak Reset_Handler
+  .type Reset_Handler, %function
+Reset_Handler:
+  ldr   r0, =_estack
  80008ec:	480d      	ldr	r0, [pc, #52]	; (8000924 <LoopForever+0x2>)
+  mov   sp, r0          /* set stack pointer */
  80008ee:	4685      	mov	sp, r0
+
+/* Copy the data segment initializers from flash to SRAM */
+  ldr r0, =_sdata
  80008f0:	480d      	ldr	r0, [pc, #52]	; (8000928 <LoopForever+0x6>)
+  ldr r1, =_edata
  80008f2:	490e      	ldr	r1, [pc, #56]	; (800092c <LoopForever+0xa>)
+  ldr r2, =_sidata
  80008f4:	4a0e      	ldr	r2, [pc, #56]	; (8000930 <LoopForever+0xe>)
+  movs r3, #0
  80008f6:	2300      	movs	r3, #0
+  b LoopCopyDataInit
  80008f8:	e002      	b.n	8000900 <LoopCopyDataInit>
 
 080008fa <CopyDataInit>:
+
+CopyDataInit:
+  ldr r4, [r2, r3]
  80008fa:	58d4      	ldr	r4, [r2, r3]
+  str r4, [r0, r3]
  80008fc:	50c4      	str	r4, [r0, r3]
+  adds r3, r3, #4
  80008fe:	3304      	adds	r3, #4
 
 08000900 <LoopCopyDataInit>:
+
+LoopCopyDataInit:
+  adds r4, r0, r3
  8000900:	18c4      	adds	r4, r0, r3
+  cmp r4, r1
  8000902:	428c      	cmp	r4, r1
+  bcc CopyDataInit
  8000904:	d3f9      	bcc.n	80008fa <CopyDataInit>
+  
+/* Zero fill the bss segment. */
+  ldr r2, =_sbss
  8000906:	4a0b      	ldr	r2, [pc, #44]	; (8000934 <LoopForever+0x12>)
+  ldr r4, =_ebss
  8000908:	4c0b      	ldr	r4, [pc, #44]	; (8000938 <LoopForever+0x16>)
+  movs r3, #0
  800090a:	2300      	movs	r3, #0
+  b LoopFillZerobss
  800090c:	e001      	b.n	8000912 <LoopFillZerobss>
 
 0800090e <FillZerobss>:
+
+FillZerobss:
+  str  r3, [r2]
  800090e:	6013      	str	r3, [r2, #0]
+  adds r2, r2, #4
  8000910:	3204      	adds	r2, #4
 
 08000912 <LoopFillZerobss>:
+
+LoopFillZerobss:
+  cmp r2, r4
  8000912:	42a2      	cmp	r2, r4
+  bcc FillZerobss
  8000914:	d3fb      	bcc.n	800090e <FillZerobss>
+
+/* Call the clock system intitialization function.*/
+  bl  SystemInit
  8000916:	f7ff ffe3 	bl	80008e0 <SystemInit>
+/* Call static constructors */
+  bl __libc_init_array
  800091a:	f002 f9d1 	bl	8002cc0 <__libc_init_array>
+/* Call the application's entry point.*/
+  bl main
  800091e:	f7ff fc7f 	bl	8000220 <main>
 
 08000922 <LoopForever>:
+
+LoopForever:
+    b LoopForever
  8000922:	e7fe      	b.n	8000922 <LoopForever>
+  ldr   r0, =_estack
  8000924:	20004000 	.word	0x20004000
+  ldr r0, =_sdata
  8000928:	20000000 	.word	0x20000000
+  ldr r1, =_edata
  800092c:	20000268 	.word	0x20000268
+  ldr r2, =_sidata
  8000930:	08002d70 	.word	0x08002d70
+  ldr r2, =_sbss
  8000934:	20000268 	.word	0x20000268
+  ldr r4, =_ebss
  8000938:	200003b0 	.word	0x200003b0
 
 0800093c <ADC1_COMP_IRQHandler>:
+ * @retval : None
+*/
+    .section .text.Default_Handler,"ax",%progbits
+Default_Handler:
+Infinite_Loop:
+  b Infinite_Loop
  800093c:	e7fe      	b.n	800093c <ADC1_COMP_IRQHandler>
 	...
 
